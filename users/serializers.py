@@ -2,7 +2,7 @@ from rest_framework import serializers
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
 
-# Récupérer le modèle utilisateur personnalisé défini dans settings.AUTH_USER_MODEL
+# Récupérer le modèle utilisateur personnalisé
 User = get_user_model()
 
 class UserSerializer(serializers.ModelSerializer):
@@ -14,11 +14,28 @@ class UserSerializer(serializers.ModelSerializer):
     - Afficher les détails d'un utilisateur
     - Mettre à jour les informations d'un utilisateur existant
     """
+    role_display = serializers.SerializerMethodField()
+    
     class Meta:
         model = User
-        fields = ('id', 'username', 'email', 'first_name', 'last_name', 'role',
-                 'phone', 'bio', 'profile_picture', 'date_joined')
-        read_only_fields = ('date_joined',)  # Ce champ ne peut pas être modifié via l'API
+        fields = ('id', 'username', 'email', 'first_name', 'last_name', 'role', 'role_display',
+                 'phone_number', 'profile_picture', 'date_joined', 'is_active')
+        read_only_fields = ('date_joined', 'role_display')
+        extra_kwargs = {
+            'password': {'write_only': True}
+        }
+    
+    def get_role_display(self, obj):
+        """
+        Obtient la représentation textuelle du rôle de l'utilisateur
+        
+        Args:
+            obj: L'instance User
+            
+        Returns:
+            Le libellé du rôle de l'utilisateur
+        """
+        return dict(User.ROLE_CHOICES).get(obj.role, "Inconnu")
 
 
 class UserCreateSerializer(serializers.ModelSerializer):
@@ -46,7 +63,7 @@ class UserCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ('id', 'username', 'email', 'password', 'password_confirm', 
-                 'first_name', 'last_name', 'role', 'phone', 'bio')
+                 'first_name', 'last_name', 'role', 'phone_number', 'profile_picture')
     
     def validate(self, data):
         """
@@ -62,7 +79,7 @@ class UserCreateSerializer(serializers.ModelSerializer):
             ValidationError: Si les mots de passe ne correspondent pas
         """
         if data['password'] != data['password_confirm']:
-            raise serializers.ValidationError({"password": "Password fields didn't match."})
+            raise serializers.ValidationError({"password": "Les mots de passe ne correspondent pas."})
         return data
     
     def create(self, validated_data):
