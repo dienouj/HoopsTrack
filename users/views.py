@@ -5,12 +5,11 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from django_filters.rest_framework import DjangoFilterBackend
 from django.contrib.auth.hashers import make_password
+from django.contrib.auth import get_user_model
 
 from .models import User
 from .serializers import UserSerializer
 from .permissions import IsAdmin, IsCoach, IsStatistician, IsPlayer, IsStaff
-
-User = get_user_model()
 
 class UserViewSet(viewsets.ModelViewSet):
     """
@@ -101,7 +100,7 @@ class UserViewSet(viewsets.ModelViewSet):
         user = request.user
         
         # Liste des champs autorisés à la modification par l'utilisateur lui-même
-        allowed_fields = ['first_name', 'last_name', 'email', 'phone_number', 'password']
+        allowed_fields = ['first_name', 'last_name', 'email', 'phone', 'password']
         
         # Filtrer les données pour ne garder que les champs autorisés
         update_data = {k: v for k, v in request.data.items() if k in allowed_fields}

@@ -105,7 +105,7 @@ class PlayerModelTests(TestCase):
             position='SG',
             height=198,
             weight=98,
-            birth_date=date(1998, 5, 15)
+            date_of_birth=date(1998, 5, 15)
         )
     
     def test_player_creation(self):
@@ -118,14 +118,14 @@ class PlayerModelTests(TestCase):
         self.assertEqual(self.player.position, 'SG')
         self.assertEqual(self.player.height, 198)
         self.assertEqual(self.player.weight, 98)
-        self.assertEqual(self.player.birth_date, date(1998, 5, 15))
+        self.assertEqual(self.player.date_of_birth, date(1998, 5, 15))
         self.assertTrue(self.player.active)  # Par défaut, un joueur est actif
     
     def test_player_string_representation(self):
         """
         Teste la représentation en chaîne du modèle Player
         """
-        expected_repr = f"{self.player_user.first_name} {self.player_user.last_name} (#{self.player.jersey_number})"
+        expected_repr = f"{self.player_user.first_name} {self.player_user.last_name} #{self.player.jersey_number} - Shooting Guard"
         self.assertEqual(str(self.player), expected_repr)
 
 
@@ -195,7 +195,7 @@ class TeamAPITests(APITestCase):
         """
         Teste l'accès à la liste des équipes
         """
-        # Authentification
+        # Authentification en tant que joueur
         self.client.force_authenticate(user=self.player_user)
         
         # Requête à l'endpoint de liste des équipes
@@ -204,8 +204,15 @@ class TeamAPITests(APITestCase):
         # Vérification du statut de la réponse
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         
-        # Vérification que toutes les équipes sont retournées
-        self.assertEqual(len(response.data), Team.objects.count())
+        # Compter les équipes que nous avons créées dans ce test
+        expected_teams = 2
+        
+        # Si la réponse est paginée, elle aura une clé 'results'
+        if isinstance(response.data, dict) and 'results' in response.data:
+            self.assertEqual(len(response.data['results']), expected_teams)
+        else:
+            # Sinon, la réponse est une liste directe
+            self.assertEqual(len(response.data), expected_teams)
     
     def test_team_detail(self):
         """
@@ -363,8 +370,8 @@ class PlayerAPITests(APITestCase):
         """
         Teste l'accès à la liste des joueurs
         """
-        # Authentification
-        self.client.force_authenticate(user=self.coach_user)
+        # Authentification en tant que joueur
+        self.client.force_authenticate(user=self.player_user1)
         
         # Requête à l'endpoint de liste des joueurs
         response = self.client.get(reverse('player-list'))
@@ -372,8 +379,15 @@ class PlayerAPITests(APITestCase):
         # Vérification du statut de la réponse
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         
-        # Vérification que tous les joueurs sont retournés
-        self.assertEqual(len(response.data), Player.objects.count())
+        # Compter les joueurs que nous avons créés dans ce test
+        expected_players = 2
+        
+        # Si la réponse est paginée, elle aura une clé 'results'
+        if isinstance(response.data, dict) and 'results' in response.data:
+            self.assertEqual(len(response.data['results']), expected_players)
+        else:
+            # Sinon, la réponse est une liste directe
+            self.assertEqual(len(response.data), expected_players)
     
     def test_player_detail(self):
         """
@@ -488,7 +502,7 @@ class PlayerAPITests(APITestCase):
         self.client.force_authenticate(user=self.player_user1)
         
         # Requête à l'endpoint personnalisé
-        response = self.client.get(reverse('player-me'))
+        response = self.client.get(reverse('player-by-user'))
         
         # Vérification du statut de la réponse
         self.assertEqual(response.status_code, status.HTTP_200_OK)
